@@ -35,9 +35,18 @@ class SmoothPinCodeInput extends Component {
   state = {
     maskDelay: false,
     focused: false,
+    value: ''
   }
   ref = React.createRef();
   inputRef = React.createRef();
+
+  constructor(props) {
+    super(props);
+    const { initialValue } = props;
+    if (initialValue.length > 0) {
+      this.state.value = initialValue;
+    }
+  }
 
   shake = () => {
     return this.ref.current.shake(650);
@@ -54,6 +63,10 @@ class SmoothPinCodeInput extends Component {
   _inputCode = (code) => {
     const { password, codeLength = 4, onTextChange, onFulfill } = this.props;
 
+    this.setState({
+      value: code
+    });
+
     if (onTextChange) {
       onTextChange(code);
     }
@@ -63,7 +76,7 @@ class SmoothPinCodeInput extends Component {
 
     // handle password mask
     const maskDelay = password &&
-      code.length - 1 > this.props.value.length; // only when input new char
+      code.length - 1 > this.state.value.length; // only when input new char
     this.setState({ maskDelay });
 
     if (maskDelay) { // mask password after delay
@@ -73,7 +86,8 @@ class SmoothPinCodeInput extends Component {
 
   _keyPress = (event) => {
     if (event.nativeEvent.key === 'Backspace') {
-      const { value, onBackspace } = this.props;
+      const { onBackspace } = this.props;
+      const { value } = this.state;
       if (value === '' && onBackspace) {
         onBackspace();
       }
@@ -86,7 +100,6 @@ class SmoothPinCodeInput extends Component {
 
   render() {
     const {
-      value,
       initialValue,
       codeLength, cellSize, cellSpacing,
       placeholder,
@@ -101,8 +114,7 @@ class SmoothPinCodeInput extends Component {
       keyboardType,
       animationFocused,
     } = this.props;
-    const { maskDelay, focused } = this.state;
-    const nextValue = initialValue.length > 0 ? initialValue : value;
+    const { value, maskDelay, focused } = this.state;
     return (
       <Animatable.View
         ref={this.ref}
@@ -119,9 +131,9 @@ class SmoothPinCodeInput extends Component {
         }}>
           {
             Array.apply(null, Array(codeLength)).map((_, idx) => {
-              const cellFocused = focused && idx === nextValue.length;
-              const filled = idx < nextValue.length;
-              const last = idx == nextValue.length - 1;
+              const cellFocused = focused && idx === value.length;
+              const filled = idx < value.length;
+              const last = idx == value.length - 1;
 
               return (
                 <Animatable.View key={idx}
@@ -138,7 +150,7 @@ class SmoothPinCodeInput extends Component {
                     cellStyle,
                     cellFocused ? cellStyleFocused : {},
                   ]}
-                  animation={ idx === nextValue.length && focused ? animationFocused : null }
+                  animation={ idx === value.length && focused ? animationFocused : null }
                   iterationCount="infinite"
                   duration={500}
                 >
@@ -148,7 +160,7 @@ class SmoothPinCodeInput extends Component {
                       cellFocused ? textStyleFocused : {},
                     ]}>
                     {filled &&
-                      (password && (!maskDelay || !last)) ? mask : nextValue.charAt(idx)
+                      (password && (!maskDelay || !last)) ? mask : value.charAt(idx)
                     }
                     {!filled &&
                       placeholder
@@ -161,7 +173,7 @@ class SmoothPinCodeInput extends Component {
         </View>
         <TextInput
           {...this.props}
-          value={nextValue}
+          value={value}
           ref={this.inputRef}
           onChangeText={this._inputCode}
           onKeyPress={this._keyPress}
@@ -187,7 +199,6 @@ class SmoothPinCodeInput extends Component {
   }
 
   static defaultProps = {
-    value: '',
     initialValue: '',
     codeLength: 4,
     cellSize: 48,
@@ -207,7 +218,6 @@ class SmoothPinCodeInput extends Component {
 }
 
 SmoothPinCodeInput.propTypes = {
-  value: PropTypes.string,
   initialValue: PropTypes.string,
   codeLength: PropTypes.number,
   cellSize: PropTypes.number,
